@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.25;
 
+/**
+ * A demo smart contract that allows two parties to place a 1:1 wager and a
+ * third-party to adjudicate the winner.
+ */
 contract Bet {
     uint256 nBets;
     mapping(uint256 => address) yes;
