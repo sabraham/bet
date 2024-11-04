@@ -183,7 +183,7 @@ contract BetTest is Test {
         vm.stopPrank();
     }
 
-    /// @dev Test reversion if judge determines a winner that is not the yes/no address.
+    /// @dev Test reversion if judge determines a winner that is not the yes/no/0 address.
     function test_RevertIfNeitherYesNorNoWinner() external {
         uint256 b = bet.createBet(alice, bob, charlie, 100);
 
@@ -248,5 +248,39 @@ contract BetTest is Test {
 
         assertEq(alice.balance, 1 ether + 100 wei);
         assertEq(bob.balance, 2 ether - 100 wei);
+    }
+
+    /// @dev Test that a 0 determination sends funds back to alice, bob.
+    function test_ZeroDetermination() external {
+        uint256 b = bet.createBet(alice, bob, charlie, 100);
+
+        // charlie judges early
+        vm.startPrank(charlie);
+        vm.expectRevert();
+        bet.determine(b, alice);
+        vm.stopPrank();
+
+        // alice funds
+        vm.startPrank(alice);
+        bet.fund{value: 100}(b);
+        assertEq(alice.balance, 1 ether - 100 wei);
+        vm.stopPrank();
+
+        // bob funds
+        vm.startPrank(bob);
+        bet.fund{value: 100}(b);
+        assertEq(bob.balance, 2 ether - 100 wei);
+        vm.stopPrank();
+
+        // charlie judges
+        vm.expectEmit(true, false, false, true, address(bet));
+        emit BetEvents.BetDetermined(address(0));
+
+        vm.startPrank(charlie);
+        bet.determine(b, address(0));
+        vm.stopPrank();
+
+        assertEq(alice.balance, 1 ether);
+        assertEq(bob.balance, 2 ether);
     }
 }

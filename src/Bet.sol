@@ -4,7 +4,13 @@ pragma solidity >=0.8.25;
 import {console} from "forge-std/console.sol";
 
 contract BetEvents {
-    event BetCreated(address _creator, address _yes, address _no, address _judge, uint256 _amt);
+    event BetCreated(
+        address _creator,
+        address _yes,
+        address _no,
+        address _judge,
+        uint256 _amt
+    );
     event BetFunded(bool _yesFunded, bool _noFunded);
     event BetDetermined(address _winner);
 }
@@ -34,10 +40,12 @@ contract Bet is BetEvents {
         Determined
     }
 
-    function createBet(address _yesAddr, address _noAddr, address _judgeAddr, uint256 _amt)
-        external
-        returns (uint256)
-    {
+    function createBet(
+        address _yesAddr,
+        address _noAddr,
+        address _judgeAddr,
+        uint256 _amt
+    ) external returns (uint256) {
         uint256 bet = nBets++;
 
         BetData storage betData = bets[bet];
@@ -53,7 +61,10 @@ contract Bet is BetEvents {
 
     function fund(uint256 _bet) public payable {
         BetData storage bet = bets[_bet];
-        require(msg.value == bet.amt, "Funding amount did not match bet amount.");
+        require(
+            msg.value == bet.amt,
+            "Funding amount did not match bet amount."
+        );
         if (msg.sender == bet.yes) {
             if (bet.yesFunded) {
                 revert("Bet already funded");
@@ -77,10 +88,19 @@ contract Bet is BetEvents {
     function determine(uint256 _bet, address _winner) public {
         BetData storage bet = bets[_bet];
         require(msg.sender == bet.judge, "msg.sender was not judge.");
-        require(_winner == bet.yes || _winner == bet.no, "winner was not yes or no.");
+        require(
+            _winner == bet.yes || _winner == bet.no || _winner == address(0),
+            "winner was not yes or no."
+        );
         require(bet.status == BetStatus.Funded, "status is not Funded.");
         bet.status = BetStatus.Determined;
-        payable(_winner).transfer(bet.amt * 2);
+        if (_winner == address(0)) {
+            payable(bets[_bet].yes).transfer(bet.amt);
+            payable(bets[_bet].no).transfer(bet.amt);
+        } else {
+            payable(_winner).transfer(bet.amt * 2);
+        }
+
         emit BetDetermined(_winner);
     }
 }
