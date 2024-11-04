@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
 
 import {Bet} from "../src/Bet.sol";
+import {BetEvents} from "../src/Bet.sol";
 
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
@@ -31,7 +32,12 @@ contract BetTest is Test {
 
     /// @dev Test happy path of a bet being created, funded, and determined.
     function test_HappyPathYesNoYes() external {
+        vm.expectEmit(true, false, false, true, address(bet));
+        emit BetEvents.BetCreated(msg.sender, alice, bob, charlie, 100);
+
+        vm.startPrank(msg.sender);
         uint256 b = bet.createBet(alice, bob, charlie, 100);
+        vm.stopPrank();
 
         // alice funds
         vm.startPrank(alice);
@@ -233,6 +239,9 @@ contract BetTest is Test {
         vm.stopPrank();
 
         // charlie judges
+        vm.expectEmit(true, false, false, true, address(bet));
+        emit BetEvents.BetDetermined(alice);
+
         vm.startPrank(charlie);
         bet.determine(b, alice);
         vm.stopPrank();

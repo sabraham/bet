@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.25;
+
 import {console} from "forge-std/console.sol";
+
+contract BetEvents {
+    event BetCreated(address _creator, address _yes, address _no, address _judge, uint256 _amt);
+    event BetFunded(bool _yesFunded, bool _noFunded);
+    event BetDetermined(address _winner);
+}
 
 /**
  * A demo smart contract that allows two parties to place a 1:1 wager and a
  * third-party to adjudicate the winner.
  */
-contract Bet {
+contract Bet is BetEvents {
     uint256 nBets;
 
     struct BetData {
@@ -40,6 +47,7 @@ contract Bet {
         betData.judge = _judgeAddr;
         betData.amt = _amt;
         betData.status = BetStatus.Created;
+        emit BetCreated(msg.sender, _yesAddr, _noAddr, _judgeAddr, _amt);
         return bet;
     }
 
@@ -63,6 +71,7 @@ contract Bet {
         if (bet.yesFunded && bet.noFunded) {
             bet.status = BetStatus.Funded;
         }
+        emit BetFunded(bet.yesFunded, bet.noFunded);
     }
 
     function determine(uint256 _bet, address _winner) public {
@@ -72,5 +81,6 @@ contract Bet {
         require(bet.status == BetStatus.Funded, "status is not Funded.");
         bet.status = BetStatus.Determined;
         payable(_winner).transfer(bet.amt * 2);
+        emit BetDetermined(_winner);
     }
 }
